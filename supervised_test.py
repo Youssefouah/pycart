@@ -3,6 +3,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import numpy as np
+from sklearn.impute import SimpleImputer
+
 from pycaret.regression import RegressionExperiment
 from pycaret.classification import ClassificationExperiment
 import pickle
@@ -26,8 +28,18 @@ if file is not None:
     df = df[:num] 
 
     st.header("exploratory the data")
+    # Multi-selection widget to choose columns to drop
+    columns_to_drop = st.multiselect('Select columns to drop:', df.columns)
+    data = data.drop(columns = columns_to_drop)
+    st.write(data.head())
+
     tab1, tab2  = st.tabs(["scatter plot","histogram"])
-    col_num = df.select_dtypes(include = np.number).columns.to_list()
+
+    col_num = data.select_dtypes(include = np.number).columns.to_list()
+    # Identify categorical and numerical columns
+    categorical_columns = data.select_dtypes(include=['object', 'category']).columns
+
+
     with tab1:
         col1,col2,col3 = st.columns(3)
         
@@ -50,10 +62,40 @@ if file is not None:
 
   # select model and use paycart
     st.header("Model ")
-    
+
+    # if you want dropna data 
+    drop_data = st.selectbox("Do you want to dropna data :",["Dropna"],index=None)
+    if drop_data is not None:
+        data = data.dropna()
+        st.write("Number  of value null of the data :" ,data.isna().sum())
+    #number of column null st.write(data.isna().sum())
+    st.write("Number  of value null of the data :" ,data.isna().sum())
+    #calcul number null of categorical features
+    if categorical_columns is not None:
+        #st.write("Number null of categorical features :" ,data.isna().sum())
+        #  what do you want to do with categorical 
+        method_freq = st.selectbox("Select method impute for categorical :",["most_frequent","constant"],index=None)
+        if method_freq is not None:
+            objet_impute = SimpleImputer(strategy=method_freq,missing_values=np.nan)
+            data[categorical_columns] = objet_impute.fit_transform(data[categorical_columns])
+            st.write(data.isna().sum())
+
+    #calcul number null of numeric features
+    if col_num is not None:
+        #st.write("Number null of numeric features :" ,data.isna().sum())
+        #  what do you want to do with numerical features
+        method_frq = st.selectbox("Select method impute for numeric:",["mean","median"],index=None)
+        if method_frq is not None:
+            num_impute = SimpleImputer(strategy=method_frq,missing_values=np.nan)
+            data[col_num] = num_impute.fit_transform(data[col_num])
+            st.write(data.isna().sum())
+
+
     target1 = st.selectbox("Select the target of your model:",data.columns,index=None)
     if (target1 is not None):
-        if len(data[target1].value_counts()) == 2:
+        data[target1] = data[target1].astype(float)
+        if len(data[target1].value_counts()) <= 10:
+            st.write("This model is Classification ")
             s = ClassificationExperiment()
             s.setup(data, target = target1, session_id = 123)
     
@@ -61,6 +103,7 @@ if file is not None:
                 best = s.compare_models()
                 st.write("The best classification model that you can use for prediction is:",best.__str__())
         else:
+            st.write("This model is regression ")
             s = RegressionExperiment()
             s.setup(data, target = target1, session_id = 123)
     
@@ -78,6 +121,3 @@ if file is not None:
             href = f'<a href="data:file/output_model;base64,{b64}" download="myfile.pkl">Download Trained Model .pkl File</a>'
             st.markdown(href, unsafe_allow_html=True)
         download_model(model)
-
-
-
