@@ -68,6 +68,7 @@ if file is not None:
     if drop_data is not None:
         data = data.dropna()
         st.write("Number  of value null of the data :" ,data.isna().sum())
+        st.write("The shape of the data :" ,data.shape)
     #number of column null st.write(data.isna().sum())
     st.write("Number  of value null of the data :" ,data.isna().sum())
     #calcul number null of categorical features
