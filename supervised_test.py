@@ -94,7 +94,7 @@ if file is not None:
 
     target1 = st.selectbox("Select the target of your model:",data.columns,index=None)
     if (target1 is not None):
-        data[target1] = data[target1].astype(float)
+      #  data[target1] = data[target1].astype(float)
         if len(data[target1].value_counts()) <= 10:
             st.write("This model is Classification ")
             s = ClassificationExperiment()
